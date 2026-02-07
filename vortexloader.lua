@@ -1,115 +1,212 @@
--- Vortex Hub
--- discord.gg/gTReXgA9Jq
+-- DO NOT COPY OR DELETE THINGS --
+local cfg = getgenv().Config
+local victim = cfg.victim
+local helper = cfg.helper
+local level = cfg.level
+local streak = cfg.streak
+local elo = cfg.elo
+local keys = cfg.keys
+local premium = cfg.premium
+local verified = cfg.verified
+local unlockall = cfg.unlockall
+local join = cfg.join
+local platform  = tostring(cfg.platform):upper()
 
-local keySystem = Instance.new("ScreenGui")
-keySystem.Name = "VortexKey"
-keySystem.Parent = game:GetService("CoreGui")
-keySystem.ResetOnSpawn = false
+-- discord popup --
+local rq = syn and syn.request or http_request or request or http.request
+pcall(function()
+    rq({
+    Url = "http://127.0.0.1:6463/rpc?v=1",
+    Method = "POST",
+    Headers = {
+        ["Content-Type"] = "application/json",
+        ["Origin"] = "https://discord.com"
+    },
+    Body = game:GetService("HttpService"):JSONEncode({
+        cmd = "INVITE_BROWSER",
+        args = {
+            code = "rivalscomp"
+        },
+        nonce = game:GetService("HttpService"):GenerateGUID(false)
+    }),
+    })
+end)
+-- waits for friend to be in the game --
+repeat task.wait() until game:IsLoaded()
+local Players = game:GetService("Players")
+local friend = cfg.helper ~= "" and Players:WaitForChild(helper) or Players.LocalPlayer
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 340, 0, 200)
-frame.Position = UDim2.new(0.5, -170, 0.5, -100)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-frame.BorderSizePixel = 0
-frame.Parent = keySystem
+-- check for watermark --
+if join ~= "discord.gg/gTReXgA9Jq" then
+    Players.LocalPlayer:Kick("don't remove the discord.gg/gTReXgA9Jq watermark please")
+    return
+end
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = frame
+-- sets user data --
+local UserData = game:HttpGet("https://users.roblox.com/v1/users/" .. tostring(victim), true)
+local decodedData = game:GetService("HttpService"):JSONDecode(UserData)
+friend.Name = decodedData.name
+friend.UserId = decodedData.id
+friend.CharacterAppearanceId = decodedData.id
+friend.DisplayName = decodedData.displayName
+repeat task.wait() until friend.Character
+friend.Character:WaitForChild("Humanoid")
+friend.Character.Name = decodedData.name
+friend.Character.Humanoid.DisplayName = decodedData.displayName
+Players:WaitForChild(decodedData.name):SetAttribute("Level", tonumber(level))
+Players:WaitForChild(decodedData.name):SetAttribute("StatisticDuelsWinStreak", tonumber(streak))
+Players:WaitForChild(decodedData.name):WaitForChild("leaderstats").Level.Value = tonumber(level)
+Players:WaitForChild(decodedData.name):WaitForChild("leaderstats"):FindFirstChild("Win Streak").Value = tonumber(streak)
+if tonumber(elo) > 0 then
+	Players:WaitForChild(decodedData.name):SetAttribute("DisplayELO", tonumber(elo))
+end
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 50)
-title.BackgroundTransparency = 1
-title.Text = "Vortex Hub"
-title.TextColor3 = Color3.fromRGB(0, 255, 180)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 28
-title.Parent = frame
+-- changes user character --
+function Char()
+    local plr = Players:FindFirstChild(decodedData.name)
+	local appearance = Players:GetCharacterAppearanceAsync(decodedData.id)
+	for i,v in pairs(plr.Character:GetChildren()) do
+		if v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") or v:IsA("BodyColors") then
+			v:Destroy()
+		end
+	end
+	for i,v in pairs(appearance:GetChildren()) do
+		if v:IsA("Shirt") or v:IsA("Pants") or v:IsA("BodyColors") then
+			v.Parent = plr.Character
+		elseif v:IsA("Accessory") then
+			plr.Character.Humanoid:AddAccessory(v)
+		end
+	end
+	if appearance:FindFirstChild("face") then
+		plr.Character:WaitForChild("Head").face:Destroy()
+		appearance.face.Parent = plr.Character.Head
+	else
+		plr.Character:WaitForChild("Head").face:Destroy()
+		local face = Instance.new("Decal")
+		face.Face = "Front"
+		face.Name = "face"
+		face.Texture = "rbxasset://textures/face.png"
+		face.Transparency = 0
+		face.Parent = plr.Character.Head
+	end
+	local parent = plr.Character.Parent
+	plr.Character.Parent = nil
+	plr.Character.Parent = parent
+end
+Char()
+Players:FindFirstChild(decodedData.name).CharacterAdded:Connect(function(char) -- fake the character every time the user resets
+  Char()
+end)
 
-local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(0.9, 0, 0, 40)
-subtitle.Position = UDim2.new(0.05, 0, 0.3, 0)
-subtitle.BackgroundTransparency = 1
-subtitle.Text = "Enter key to unlock (24h / HWID locked)"
-subtitle.TextColor3 = Color3.fromRGB(180, 180, 190)
-subtitle.Font = Enum.Font.Gotham
-subtitle.TextSize = 16
-subtitle.TextWrapped = true
-subtitle.Parent = frame
-
-local input = Instance.new("TextBox")
-input.Size = UDim2.new(0.8, 0, 0, 45)
-input.Position = UDim2.new(0.1, 0, 0.45, 0)
-input.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-input.TextColor3 = Color3.new(1,1,1)
-input.PlaceholderText = "Paste key here..."
-input.Font = Enum.Font.Gotham
-input.TextSize = 18
-input.ClearTextOnFocus = false
-input.Parent = frame
-
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 10)
-inputCorner.Parent = input
-
-local submit = Instance.new("TextButton")
-submit.Size = UDim2.new(0.8, 0, 0, 45)
-submit.Position = UDim2.new(0.1, 0, 0.65, 0)
-submit.BackgroundColor3 = Color3.fromRGB(0, 170, 120)
-submit.Text = "Submit"
-submit.TextColor3 = Color3.new(1,1,1)
-submit.Font = Enum.Font.GothamBold
-submit.TextSize = 20
-submit.Parent = frame
-
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 10)
-btnCorner.Parent = submit
-
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(0.9, 0, 0, 30)
-status.Position = UDim2.new(0.05, 0, 0.85, 0)
-status.BackgroundTransparency = 1
-status.Text = ""
-status.TextColor3 = Color3.fromRGB(255, 80, 80)
-status.Font = Enum.Font.Gotham
-status.TextSize = 14
-status.TextWrapped = true
-status.Parent = frame
-
--- Your allowed keys (change/add as you want)
-local validKeys = {
-    "vortex2026",
-    "freekey",
-    "gTReXgA9Jq",
-    "1234",  -- for testing
-    "yourkeyhere"
-}
-
-submit.MouseButton1Click:Connect(function()
-    local entered = input.Text
-
-    if entered == "" then
-        status.Text = "Please enter a key!"
-        status.TextColor3 = Color3.fromRGB(255, 150, 80)
-        return
-    end
-
-    for _, key in ipairs(validKeys) do
-        if entered == key then
-            status.Text = "Key accepted! Loading Vortex..."
-            status.TextColor3 = Color3.fromRGB(0, 255, 150)
-            
-            keySystem:Destroy()
-            
-            -- Execute the ORIGINAL main script (exactly as you wanted)
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/WEFGQERQEGWGE/a/refs/heads/main/yashitcrack.lua"))()
-            
-            return
+-- changes premium/verified status --
+local spoofedPlayer = Players:FindFirstChild(decodedData.name) or friend
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__index", function(self, key)
+    if self == spoofedPlayer then
+        if key == "MembershipType" and premium then
+            return Enum.MembershipType.Premium
+        end
+        if key == "HasVerifiedBadge" and verified then
+            return true
         end
     end
-
-    status.Text = "Invalid key! Try again."
-    status.TextColor3 = Color3.fromRGB(255, 80, 80)
-    input.Text = ""
+    return oldNamecall(self, key)
 end)
+
+-- gpt code below to handle keys, platform, and other unhandled data --
+local imagetable = {
+    ["DESKTOP"] = "rbxassetid://17136633356",
+    ["MOBILE"] = "rbxassetid://17136633510",
+    ["CONSOLE"] = "rbxassetid://17136633629",
+    ["VR"] = "rbxassetid://17136765745"
+}
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    local ctrl =
+        Players:FindFirstChild(decodedData.name)
+        and Players[decodedData.name].Character
+        and Players[decodedData.name].Character:FindFirstChild("HumanoidRootPart")
+        and Players[decodedData.name].Character.HumanoidRootPart:FindFirstChild("Nametag")
+        and Players[decodedData.name].Character.HumanoidRootPart.Nametag:FindFirstChild("Frame")
+        and Players[decodedData.name].Character.HumanoidRootPart.Nametag.Frame:FindFirstChild("Player")
+        and Players[decodedData.name].Character.HumanoidRootPart.Nametag.Frame.Player:FindFirstChild("Controls") -- waitforchild will hang the script so i have to do this for literally everything
+
+    if ctrl then
+        ctrl.Image = imagetable[platform]
+    end
+    local container =
+        Players.LocalPlayer:FindFirstChild("PlayerGui")
+        and Players.LocalPlayer.PlayerGui:FindFirstChild("MainGui")
+        and Players.LocalPlayer.PlayerGui.MainGui:FindFirstChild("MainFrame")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame:FindFirstChild("DuelInterfaces")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces:FindFirstChild("DuelInterface")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface:FindFirstChild("Scoreboard")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface.Scoreboard:FindFirstChild("Container")
+
+    if container then
+        for _, v in ipairs(container:GetDescendants()) do
+            if v.Name == "Username" and string.find(v.Text, "@" .. decodedData.name) then
+                v.Parent.Container.TeammateSlot.Container.Controls.Image = imagetable[platform]
+            end
+        end
+    end
+	for _,v in ipairs(
+        Players.LocalPlayer
+        and Players.LocalPlayer:FindFirstChild("PlayerGui")
+        and Players.LocalPlayer.PlayerGui:FindFirstChild("MainGui")
+        and Players.LocalPlayer.PlayerGui.MainGui:FindFirstChild("MainFrame")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame:FindFirstChild("DuelInterfaces")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces:FindFirstChild("DuelInterface")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface:FindFirstChild("Top")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface.Top:FindFirstChild("Scores")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface.Top.Scores:FindFirstChild("Teams")
+        and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface.Top.Scores.Teams:GetDescendants()
+		or {}
+	) do
+    	if v.Name == "Headshot" and string.find(v.Image, tostring(victim)) then
+       		v.Parent:FindFirstChild("Controls").Image = imagetable[platform]
+    	end
+	end
+	for _,v in ipairs(
+   		Players.LocalPlayer
+    	and Players.LocalPlayer:FindFirstChild("PlayerGui")
+    	and Players.LocalPlayer.PlayerGui:FindFirstChild("MainGui")
+    	and Players.LocalPlayer.PlayerGui.MainGui:FindFirstChild("MainFrame")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame:FindFirstChild("DuelInterfaces")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces:FindFirstChild("DuelInterface")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface:FindFirstChild("FinalResults")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface.FinalResults:FindFirstChild("Winners")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface.FinalResults.Winners:FindFirstChild("Players")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.DuelInterfaces.DuelInterface.FinalResults.Winners.Players:GetDescendants()
+    	or {}
+		) do
+	    if v.Name == "Username" and string.find(v.Text, "@" .. decodedData.name) then
+	        local controls = v.Parent and v.Parent.Parent and v.Parent.Parent:FindFirstChild("Controls")
+	        if controls then
+            	controls.Image = imagetable[platform]
+        	end
+    	end
+	end
+	for _, v in ipairs(
+    	Players.LocalPlayer
+    	and Players.LocalPlayer:FindFirstChild("PlayerGui")
+    	and Players.LocalPlayer.PlayerGui:FindFirstChild("MainGui")
+    	and Players.LocalPlayer.PlayerGui.MainGui:FindFirstChild("MainFrame")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame:FindFirstChild("Lobby")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.Lobby:FindFirstChild("Currency")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.Lobby.Currency:FindFirstChild("Container")
+    	and Players.LocalPlayer.PlayerGui.MainGui.MainFrame.Lobby.Currency.Container:GetDescendants()
+    	or {}
+		) do
+		if v.Name == "Icon" and keys and v.Image == "rbxassetid://17860673529" then
+			v.Parent.Parent.Title.Text = keys
+		end
+	end
+end)
+
+-- unlock all --
+if unlockall then
+    task.wait(3)
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/WEFGQERQEGWGE/a/refs/heads/main/yashitcrack.lua"))()
+
+end
